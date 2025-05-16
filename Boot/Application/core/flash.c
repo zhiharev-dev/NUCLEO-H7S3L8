@@ -17,8 +17,7 @@
 
 /* Includes ---------------------------------------------------------------- */
 
-#include "stm32h7s3xx_it.h"
-#include "systick.h"
+#include "flash.h"
 
 /* Private macros ---------------------------------------------------------- */
 
@@ -30,46 +29,54 @@
 
 /* Private function prototypes --------------------------------------------- */
 
+static void flash_setup_option(void);
+
 /* Private user code ------------------------------------------------------- */
 
-void NMI_Handler(void)
+/**
+ * @brief           Инициализировать FLASH
+ */
+void flash_init(void)
 {
-    error();
+    /* Настроить LATENCY = 7WS и WRHIGHFREQ = 3 */
+    WRITE_REG(FLASH->ACR,
+              0x07 << FLASH_ACR_LATENCY_Pos
+            | 0x03 << FLASH_ACR_WRHIGHFREQ_Pos);
+
+    flash_setup_option();
 }
 /* ------------------------------------------------------------------------- */
 
-void HardFault_Handler(void)
+/**
+ * @brief           Настроить опции FLASH
+ */
+static void flash_setup_option(void)
 {
-    error();
-}
-/* ------------------------------------------------------------------------- */
+    /* Настроить High Speed Low Voltage для XSPI2 */
+    if (READ_BIT(FLASH->OBW1SR, FLASH_OBW1SR_XSPI2_HSLV_Msk))
+        return;
 
-void MemManage_Handler(void)
-{
-    error();
-}
-/* ------------------------------------------------------------------------- */
+    /* Разблокировать OPTCR */
+    WRITE_REG(FLASH->OPTKEYR, 0x08192A3B);
+    WRITE_REG(FLASH->OPTKEYR, 0x4C5D6E7F);
 
-void BusFault_Handler(void)
-{
-    error();
-}
-/* ------------------------------------------------------------------------- */
+    while (READ_BIT(FLASH->OPTCR, FLASH_OPTCR_OPTLOCK_Msk))
+        continue;
 
-void UsageFault_Handler(void)
-{
-    error();
-}
-/* ------------------------------------------------------------------------- */
+    /* Включить запись опций */
+    SET_BIT(FLASH->OPTCR, FLASH_OPTCR_PG_OPT_Msk);
 
-void SysTick_Handler(void)
-{
-    systick_it_handler();
-}
-/* ------------------------------------------------------------------------- */
+    /* Записать High Speed Low Voltage для XSPI2 */
+    SET_BIT(FLASH->OBW1SRP, FLASH_OBW1SRP_XSPI2_HSLV_Msk);
 
-void systick_period_elapsed_callback(void)
-{
+    /* Ожидание завершения записи */
+    while (READ_BIT(FLASH->SR, FLASH_SR_QW_Msk))
+        continue;
 
+    /* Выключить запись опций */
+    CLEAR_BIT(FLASH->OPTCR, FLASH_OPTCR_PG_OPT_Msk);
+
+    /* Заблокировать OPTCR */
+    SET_BIT(FLASH->OPTCR, FLASH_OPTCR_OPTLOCK_Msk);
 }
 /* ------------------------------------------------------------------------- */

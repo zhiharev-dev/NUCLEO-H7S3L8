@@ -17,8 +17,7 @@
 
 /* Includes ---------------------------------------------------------------- */
 
-#include "stm32h7s3xx_it.h"
-#include "systick.h"
+#include "pwr.h"
 
 /* Private macros ---------------------------------------------------------- */
 
@@ -32,44 +31,19 @@
 
 /* Private user code ------------------------------------------------------- */
 
-void NMI_Handler(void)
+/**
+ * @brief           Инициализировать PWR
+ */
+void pwr_init(void)
 {
-    error();
-}
-/* ------------------------------------------------------------------------- */
+    /* Настроить Power Supply = LDO */
+    WRITE_REG(PWR->CSR2, 0x02);
+    while (!READ_BIT(PWR->SR1, PWR_SR1_ACTVOSRDY_Msk))
+        continue;
 
-void HardFault_Handler(void)
-{
-    error();
-}
-/* ------------------------------------------------------------------------- */
-
-void MemManage_Handler(void)
-{
-    error();
-}
-/* ------------------------------------------------------------------------- */
-
-void BusFault_Handler(void)
-{
-    error();
-}
-/* ------------------------------------------------------------------------- */
-
-void UsageFault_Handler(void)
-{
-    error();
-}
-/* ------------------------------------------------------------------------- */
-
-void SysTick_Handler(void)
-{
-    systick_it_handler();
-}
-/* ------------------------------------------------------------------------- */
-
-void systick_period_elapsed_callback(void)
-{
-
+    /* Настроить VOS = High */
+    SET_BIT(PWR->CSR4, PWR_CSR4_VOS_Msk);
+    while (!READ_BIT(PWR->CSR4, PWR_CSR4_VOSRDY_Msk))
+        continue;
 }
 /* ------------------------------------------------------------------------- */

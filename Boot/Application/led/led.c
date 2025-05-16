@@ -17,59 +17,75 @@
 
 /* Includes ---------------------------------------------------------------- */
 
-#include "stm32h7s3xx_it.h"
-#include "systick.h"
+#include "led.h"
 
 /* Private macros ---------------------------------------------------------- */
 
 /* Private constants ------------------------------------------------------- */
 
+#define LED_COUNT       3
+
 /* Private types ----------------------------------------------------------- */
 
 /* Private variables ------------------------------------------------------- */
+
+static struct led led[LED_COUNT] = {
+    /* GREEN */
+    {
+        .gpio = GPIOD,
+        .pin = GPIO_ODR_OD10,
+    },
+    /* YELLOW */
+    {
+        .gpio = GPIOD,
+        .pin = GPIO_ODR_OD13,
+    },
+    /* RED */
+    {
+        .gpio = GPIOB,
+        .pin = GPIO_ODR_OD7,
+    },
+};
 
 /* Private function prototypes --------------------------------------------- */
 
 /* Private user code ------------------------------------------------------- */
 
-void NMI_Handler(void)
+/**
+ * @brief           Включить светодиод
+ *
+ * @param[in]       id: Идентификатор светодиода
+ */
+void led_on(int32_t id)
 {
-    error();
+    assert(id < LED_COUNT && id > LED_NONE);
+
+    SET_BIT(led[id].gpio->BSRR, led[id].pin);
 }
 /* ------------------------------------------------------------------------- */
 
-void HardFault_Handler(void)
+/**
+ * @brief           Выключить светодиод
+ *
+ * @param[in]       id: Идентификатор светодиода
+ */
+void led_off(int32_t id)
 {
-    error();
+    assert(id < LED_COUNT && id > LED_NONE);
+
+    SET_BIT(led[id].gpio->BSRR, led[id].pin << 16);
 }
 /* ------------------------------------------------------------------------- */
 
-void MemManage_Handler(void)
+/**
+ * @brief           Переключить состояние светодиода
+ *
+ * @param[in]       id: Идентификатор светодиода
+ */
+void led_toggle(int32_t id)
 {
-    error();
-}
-/* ------------------------------------------------------------------------- */
+    assert(id < LED_COUNT && id > LED_NONE);
 
-void BusFault_Handler(void)
-{
-    error();
-}
-/* ------------------------------------------------------------------------- */
-
-void UsageFault_Handler(void)
-{
-    error();
-}
-/* ------------------------------------------------------------------------- */
-
-void SysTick_Handler(void)
-{
-    systick_it_handler();
-}
-/* ------------------------------------------------------------------------- */
-
-void systick_period_elapsed_callback(void)
-{
-
+    XOR_BIT(led[id].gpio->ODR, led[id].pin);
 }
 /* ------------------------------------------------------------------------- */

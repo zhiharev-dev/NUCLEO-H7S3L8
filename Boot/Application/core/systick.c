@@ -17,7 +17,6 @@
 
 /* Includes ---------------------------------------------------------------- */
 
-#include "stm32h7s3xx_it.h"
 #include "systick.h"
 
 /* Private macros ---------------------------------------------------------- */
@@ -28,47 +27,62 @@
 
 /* Private variables ------------------------------------------------------- */
 
+static volatile uint32_t tick;
+
 /* Private function prototypes --------------------------------------------- */
 
 /* Private user code ------------------------------------------------------- */
 
-void NMI_Handler(void)
+/**
+ * @brief           Инициализировать SysTick
+ */
+void systick_init(const uint32_t frequency)
 {
-    error();
+    /* Сбросить регистр управления */
+    CLEAR_REG(SysTick->CTRL);
+
+    /* Установить значение перезагрузки счетчика = 1 мс */
+    WRITE_REG(SysTick->LOAD, (frequency / 1000) - 1);
+
+    /* Установить текущее значение счетчика = 0 */
+    CLEAR_REG(SysTick->VAL);
+
+    /* Настроить тактирование от CPU и запустить таймер */
+    WRITE_REG(SysTick->CTRL,
+              SysTick_CTRL_CLKSOURCE_Msk
+            | SysTick_CTRL_TICKINT_Msk
+            | SysTick_CTRL_ENABLE_Msk);
 }
 /* ------------------------------------------------------------------------- */
 
-void HardFault_Handler(void)
+/**
+ * @brief           Обработать прерывания SysTick
+ */
+void systick_it_handler(void)
 {
-    error();
+    /* Если счетчик таймера достиг нулевого значения */
+    if (READ_BIT(SysTick->CTRL, SysTick_CTRL_COUNTFLAG_Msk)) {
+        /* Изменить значение системного таймера */
+        ++tick;
+
+        /* Вызвать функцию обратного вызова */
+        systick_period_elapsed_callback();
+    }
 }
 /* ------------------------------------------------------------------------- */
 
-void MemManage_Handler(void)
+/**
+ * @brief           Получить значение системного таймера
+ *
+ * @return          Значение таймера
+ */
+inline uint32_t systick_get_tick(void)
 {
-    error();
+    return tick;
 }
 /* ------------------------------------------------------------------------- */
 
-void BusFault_Handler(void)
-{
-    error();
-}
-/* ------------------------------------------------------------------------- */
-
-void UsageFault_Handler(void)
-{
-    error();
-}
-/* ------------------------------------------------------------------------- */
-
-void SysTick_Handler(void)
-{
-    systick_it_handler();
-}
-/* ------------------------------------------------------------------------- */
-
-void systick_period_elapsed_callback(void)
+__WEAK void systick_period_elapsed_callback(void)
 {
 
 }
