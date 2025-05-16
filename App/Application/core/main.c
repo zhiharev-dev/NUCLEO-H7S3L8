@@ -20,6 +20,7 @@
 #include "main.h"
 #include "systick.h"
 #include "pwr.h"
+#include "rcc.h"
 #include "led.h"
 
 /* Private macros ---------------------------------------------------------- */
@@ -118,6 +119,7 @@ static void setup_hardware(void)
 
     systick_init(CPU_CLOCK);
     pwr_init();
+    rcc_init();
 }
 /* ------------------------------------------------------------------------- */
 

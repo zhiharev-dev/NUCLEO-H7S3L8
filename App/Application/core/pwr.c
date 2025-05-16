@@ -39,6 +39,14 @@ static volatile bool vdd_is_lower;
  */
 void pwr_init(void)
 {
+    /* Выключить защиту домена резервного копирования */
+    SET_BIT(PWR->CR1, PWR_CR1_DBP_Msk);
+
+    /* Включить регулятор домена резервного копирования */
+    SET_BIT(PWR->CSR1, PWR_CSR1_BREN_Msk);
+    while (!READ_BIT(PWR->CSR1, PWR_CSR1_BRRDY_Msk))
+        continue;
+
     /* Включить и настроить PVD */
     MODIFY_REG(PWR->CR1,
                PWR_CR1_PLS_Msk,
