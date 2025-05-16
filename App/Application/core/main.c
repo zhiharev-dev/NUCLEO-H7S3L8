@@ -18,6 +18,8 @@
 /* Includes ---------------------------------------------------------------- */
 
 #include "main.h"
+#include "systick.h"
+#include "led.h"
 
 /* Private macros ---------------------------------------------------------- */
 
@@ -33,9 +35,6 @@
 
 /* Private variables ------------------------------------------------------- */
 
-/* Системный таймер */
-volatile uint32_t systick;
-
 /* FreeRTOS */
 static uint32_t appl_idle_hook_counter;
 static size_t free_heap_size;
@@ -50,8 +49,6 @@ static void setup_vector_table(void);
 static void setup_fpu(void);
 
 static void app_main(void *argv);
-
-static void systick_init(const uint32_t frequency);
 
 /* Private user code ------------------------------------------------------- */
 
@@ -74,8 +71,15 @@ void error(void)
 {
     __disable_irq();
 
-    while (true)
-        ;
+    /* Выключить светодиоды */
+    led_off(LED_GREEN);
+    led_off(LED_YELLOW);
+    led_off(LED_RED);
+
+    while (true) {
+        /* Включить красный светодиод - Ошибка */
+        led_on(LED_RED);
+    }
 }
 /* ------------------------------------------------------------------------- */
 
@@ -87,6 +91,9 @@ static void app_main(void *argv)
 
     while (true) {
         vTaskDelayUntil(&last_wake_time, frequency);
+
+        /* Включить зеленый светодиод - Индикация перехода в приложение */
+        led_on(LED_GREEN);
     }
 
     vTaskDelete(NULL);
@@ -127,27 +134,5 @@ static void setup_vector_table(void)
 static void setup_fpu(void)
 {
     SET_BIT(SCB->CPACR, (0x03 << 20) | (0x03 << 22));
-}
-/* ------------------------------------------------------------------------- */
-
-/**
- * @brief           Инициализировать SysTick
- */
-static void systick_init(const uint32_t frequency)
-{
-    /* Сбросить настройки */
-    CLEAR_REG(SysTick->CTRL);
-
-    /* Установить значение перезагрузки счетчика = 1 мс */
-    WRITE_REG(SysTick->LOAD, (frequency / 1000) - 1);
-
-    /* Установить текущее значение счетчика = 0 */
-    CLEAR_REG(SysTick->VAL);
-
-    /* Настроить тактирование от CPU и запустить таймер */
-    WRITE_REG(SysTick->CTRL,
-              SysTick_CTRL_CLKSOURCE_Msk
-            | SysTick_CTRL_TICKINT_Msk
-            | SysTick_CTRL_ENABLE_Msk);
 }
 /* ------------------------------------------------------------------------- */
