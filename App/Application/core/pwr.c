@@ -17,8 +17,6 @@
 
 /* Includes ---------------------------------------------------------------- */
 
-#include "stm32h7s3xx_it.h"
-#include "systick.h"
 #include "pwr.h"
 
 /* Private macros ---------------------------------------------------------- */
@@ -29,61 +27,67 @@
 
 /* Private variables ------------------------------------------------------- */
 
+/* Состояние VDD */
+static volatile bool vdd_is_lower;
+
 /* Private function prototypes --------------------------------------------- */
 
 /* Private user code ------------------------------------------------------- */
 
-void NMI_Handler(void)
+/**
+ * @brief           Инициализировать PWR
+ */
+void pwr_init(void)
 {
-    error();
+    /* Включить и настроить PVD */
+    MODIFY_REG(PWR->CR1,
+               PWR_CR1_PLS_Msk,
+               PWR_CR1_PVDE_Msk
+             | 0x06 << PWR_CR1_PLS_Pos);
+
+    /* Включить и настроить PVD output (EXTI16) */
+    SET_BIT(EXTI->IMR1, EXTI_IMR1_IM16_Msk);
+    SET_BIT(EXTI->RTSR1, EXTI_RTSR1_RT16_Msk);
+    SET_BIT(EXTI->FTSR1, EXTI_FTSR1_FT16_Msk);
+
+    /* Включить и настроить NVIC */
+    NVIC_SetPriority(PVD_PVM_IRQn, 5);
+    NVIC_EnableIRQ(PVD_PVM_IRQn);
 }
 /* ------------------------------------------------------------------------- */
 
-void HardFault_Handler(void)
+/**
+ * @brief           Обработать прерывание PWR PVD
+ */
+void pwr_pvd_pvm_it_handler(void)
 {
-    error();
+    /* Проверить прерывание EXTI16 - PVD output */
+    if (READ_BIT(EXTI->PR1, EXTI_PR1_PR16_Msk)) {
+        /* Сбросить прерывание */
+        SET_BIT(EXTI->PR1, EXTI_PR1_PR16_Msk);
+
+        /* Изменить состояние VDD */
+        vdd_is_lower = READ_BIT(PWR->SR1, PWR_SR1_PVDO_Msk) ?
+                true : false;
+
+        /* Вызвать функцию обратного вызова */
+        pwr_pvd_status_changed_callback();
+    }
 }
 /* ------------------------------------------------------------------------- */
 
-void MemManage_Handler(void)
+/**
+ * @brief           Получить состояние VDD
+ *
+ * @return          Состояние VDD
+ */
+inline bool pwr_vdd_is_lower(void)
 {
-    error();
+    return vdd_is_lower;
 }
 /* ------------------------------------------------------------------------- */
 
-void BusFault_Handler(void)
-{
-    error();
-}
-/* ------------------------------------------------------------------------- */
-
-void UsageFault_Handler(void)
-{
-    error();
-}
-/* ------------------------------------------------------------------------- */
-
-void SysTick_Handler(void)
-{
-    systick_it_handler();
-}
-/* ------------------------------------------------------------------------- */
-
-void systick_period_elapsed_callback(void)
-{
-    /* Обработать таймер FreeRTOS */
-    if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED)
-        xPortSysTickHandler();
-}
-/* ------------------------------------------------------------------------- */
-
-void PVD_PVM_IRQHandler(void)
-{
-    pwr_pvd_pvm_it_handler();
-}
-/* ------------------------------------------------------------------------- */
-
-void pwr_pvd_status_changed_callback(void)
+__WEAK void pwr_pvd_status_changed_callback(void)
 {
 
 }

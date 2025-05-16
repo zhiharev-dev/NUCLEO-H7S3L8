@@ -15,8 +15,8 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef STM32H7S3XX_IT_H_
-#define STM32H7S3XX_IT_H_
+#ifndef PWR_H_
+#define PWR_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -36,24 +36,18 @@ extern "C" {
 
 /* Exported function prototypes -------------------------------------------- */
 
-void NMI_Handler(void);
+void pwr_init(void);
 
-void HardFault_Handler(void);
+void pwr_pvd_pvm_it_handler(void);
 
-void MemManage_Handler(void);
-
-void BusFault_Handler(void);
-
-void UsageFault_Handler(void);
-
-void SysTick_Handler(void);
-
-void PVD_PVM_IRQHandler(void);
+bool pwr_vdd_is_lower(void);
 
 /* Exported callback function prototypes ----------------------------------- */
+
+__WEAK void pwr_pvd_status_changed_callback(void);
 
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
 
-#endif /* STM32H7S3XX_IT_H_ */
+#endif /* PWR_H_ */

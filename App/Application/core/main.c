@@ -19,6 +19,7 @@
 
 #include "main.h"
 #include "systick.h"
+#include "pwr.h"
 #include "led.h"
 
 /* Private macros ---------------------------------------------------------- */
@@ -116,6 +117,7 @@ static void setup_hardware(void)
     setup_fpu();
 
     systick_init(CPU_CLOCK);
+    pwr_init();
 }
 /* ------------------------------------------------------------------------- */
 
